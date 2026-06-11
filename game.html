@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spelling Bee Track Star</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --track-green: #2ecc71;
+            --track-lane-dark: #27ae60;
+            --stadium-orange: #e67e22;
+            --bee-yellow: #f1c40f;
+            --bee-dark: #2c3e50;
+            --font-main: 'Fredoka', 'Comic Sans MS', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #111a24;
+            font-family: var(--font-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        /* Fullscreen 16:9 Smartboard Layout Engine */
+        #game-wrapper {
+            position: relative;
+            width: 100vw;
+            height: 56.25vw; 
+            max-height: 100vh;
+            max-width: 177.78vh; 
+            background-color: #fffdf0;
+            border: 8px solid var(--stadium-orange);
+            border-radius: 32px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 30px;
+        }
+
+        /* Top Bar Interface Panel */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 14%;
+            z-index: 30;
+            border-bottom: 4px solid var(--bee-dark);
+            padding-bottom: 15px;
+            gap: 15px;
+        }
+
+        .btn {
+            font-family: var(--font-main);
+            font-weight: 700;
+            font-size: 1.6rem;
+            padding: 14px 36px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.1s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn:active { 
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+        }
+        .btn-primary { background-color: var(--stadium-orange); color: white; }
+        .btn-secondary { background-color: var(--bee-yellow); color: var(--bee-dark); }
+        .btn-dark { background-color: var(--bee-dark); color: white; }
+
+        #status-message {
+            font-size: 3.4rem;
+            color: var(--bee-dark);
+            font-weight: 700;
+            text-shadow: 2px 2px 0px white;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            flex-grow: 1;
+            text-align: center;
+        }
+
+        /* Dynamic Target Spelling Slots Tray */
+        .slots-outer-container {
+            height: 24%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
+        }
+
+        .slots-container {
+            display: flex;
+            gap: 15px;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(44, 62, 80, 0.06);
+            padding: 10px 25px;
+            border-radius: 30px;
+            border: 3px solid var(--bee-dark);
+            max-width: 95%;
+            overflow-x: auto;
+        }
+
+        .slot {
+            min-width: 70px;
+            height: 90px;
+            border-bottom: 8px solid var(--bee-dark);
+            font-size: 4.5rem;
+            font-weight: 700;
+            text-align: center;
+            line-height: 85px;
+            color: var(--bee-dark);
+            transition: all 0.2s ease;
+            padding: 0 10px;
+        }
+        
+        /* MASSIVE SENTENCE SLOTS */
+        .slot.sentence-mode-slot {
+            font-size: 4.5rem;
+            min-width: 260px;
+            height: 120px;
+            line-height: 110px;
+            border-bottom-width: 12px;
+            padding: 0 20px;
+        }
+
+        .slot.active-target {
+            border-bottom-color: var(--stadium-orange);
+            background-color: rgba(230, 126, 34, 0.15);
+            border-radius: 12px 12px 0 0;
+            animation: slot-pulse 1s infinite alternate;
+        }
+
+        @keyframes slot-pulse {
+            from { background-color: rgba(230, 126, 34, 0.1); }
+            to { background-color: rgba(230, 126, 34, 0.25); }
+        }
+
+        /* Stadium Athletic Race Track Play Zone */
+        .track-zone {
+            flex-grow: 1;
+            position: relative;
+            background: repeating-linear-gradient(
+                to bottom,
+                var(--track-green),
+                var(--track-green) 45px,
+                var(--track-lane-dark) 45px,
+                var(--track-lane-dark) 90px
+            );
+            border-radius: 24px;
+            border: 6px solid var(--bee-dark);
+            margin-top: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        /* White Athletic Race Track Lane Lines Layout */
+        .track-zone::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent,
+                transparent 86px,
+                rgba(255, 255, 255, 0.6) 86px,
+                rgba(255, 255, 255, 0.6) 90px
+            );
+            pointer-events: none;
+        }
+
+        /* Super-Sized Fluidly Transformed Letter Blocks */
+        .letter-node {
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            background-color: var(--bee-yellow);
+            border: 6px solid var(--bee-dark);
+            border-radius: 28px;
+            font-size: 6.5rem;
+            font-weight: 700;
+            color: var(--bee-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 10px 0 var(--bee-dark);
+            z-index: 10;
+            will-change: transform;
+            transform: translate3d(0, 0, 0);
+            transition: transform 0.1s ease, background-color 0.2s ease, box-shadow 0.2s ease, opacity 0.3s ease;
+            padding: 5px;
+        }
+
+        /* HUGE CINEMATIC SENTENCE BLOCKS */
+        .letter-node.sentence-node {
+            width: auto;
+            min-width: 320px;
+            height: 170px;
+            font-size: 5rem;
+            border-radius: 36px;
+            border-width: 8px;
+            box-shadow: 0 15px 0 var(--bee-dark);
+            padding: 0 45px;
+            white-space: nowrap;
+        }
+
+        .letter-node:active {
+            transform: scale(0.92) translate3d(0, 0, 0);
+        }
+
+        /* Smooth springy scattering sweep animation layout */
+        .letter-node.smooth-move {
+            transition: transform 0.95s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Huge Cinematic Character Runner Element Layer Wrapper */
+        #runner-positioner {
+            position: absolute;
+            width: 380px;
+            height: 380px;
+            z-index: 25;
+            pointer-events: none;
+            will-change: transform;
+            transform: translate3d(-450px, 0, 0);
+        }
+
+        /* Running Animation Node separating translation from bounce physics */
+        #runner-character {
+            width: 100%;
+            height: 100%;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center bottom;
+        }
+
+        .running {
+            animation: bounce 0.12s infinite alternate ease-in-out;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-25px); }
+        }
+
+        /* 16:9 Main Menu Cover Overlay - Shifted Lower and to the Right */
+        #start-menu-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; 
+            align-items: flex-end;     
+            z-index: 150;
+            padding: 0 5% 4% 0;       
+            transition: opacity 0.4s ease;
+        }
+
+        /* Prominent Header Logo Credits Element Sub-branding Badge Positioned Directly Below Title Text */
+        .main-menu-logo-credits {
+            position: absolute;
+            top: 43%;
+            left: 55%;
+            transform: rotate(-4deg);
+            color: var(--stadium-orange);
+            font-size: 3rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 
+                -3px -3px 0 #fff,  
+                 3px -3px 0 #fff,
+                -3px  3px 0 #fff,
+                 3px  3px 0 #fff,
+                 4px  5px 12px rgba(0,0,0,0.3);
+            z-index: 160;
+            pointer-events: none;
+        }
+
+        .menu-actions-box {
+            display: flex;
+            flex-direction: column;   
+            gap: 14px;
+            background: rgba(26, 37, 47, 0.94);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 25px 35px;
+            border-radius: 32px;
+            border: 4px solid var(--bee-yellow);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+            width: 420px;
+        }
+
+        .btn-giant {
+            font-size: 2rem;
+            padding: 14px 25px;
+            border-radius: 20px;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.3);
+            width: 100%;
+            text-align: center;
+        }
+
+        .menu-divider {
+            height: 2px;
+            background: rgba(255,255,255,0.15);
+            margin: 5px 0;
+        }
+
+        /* Highly Visible & Bigger Gameplay Credit Caption Banner Style */
+        .gameplay-credit-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: #ffffff;
+            font-size: 1.35rem;
+            font-weight: 600;
+            z-index: 28;
+            pointer-events: none;
+            background: rgba(26, 37, 47, 0.85);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-top: 2px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Drawer Custom Controls Panel Drawer Window */
+        #editor-drawer {
+            position: absolute;
+            top: 0; left: -440px;
+            width: 400px; height: 100%;
+            background: white;
+            box-shadow: 10px 0 40px rgba(0,0,0,0.25);
+            z-index: 200;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 35px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #editor-drawer.open { transform: translateX(440px); }
+        #editor-drawer h3 { margin-top: 0; font-size: 2.2rem; color: var(--bee-dark); }
+        #word-input-area {
+            flex-grow: 1; width: 100%; font-family: var(--font-main);
+            font-size: 1.4rem; padding: 15px; border: 3px solid #bdc3c7;
+            border-radius: 16px; resize: none; outline: none;
+        }
+        #word-input-area:focus { border-color: var(--stadium-orange); }
+
+        /* Dialog Overlays */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(17, 26, 36, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .overlay.active { opacity: 1; pointer-events: auto; }
+        
+        .popup-card { 
+            background: white; 
+            padding: 50px 90px; 
+            border-radius: 40px; 
+            text-align: center; 
+            border: 6px solid var(--stadium-orange); 
+            box-shadow: 0 30px 70px rgba(0,0,0,0.3);
+            transform: scale(0.8);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .overlay.active .popup-card { transform: scale(1); }
+        .popup-card h2 { font-size: 5.5rem; margin: 0 0 30px 0; color: var(--stadium-orange); }
+    </style>
+</head>
+<body>
+
+    <div id="editor-drawer">
+        <h3 id="drawer-title">Edit Deck</h3>
+        <p id="drawer-instructions" style="font-size:1.1rem; color:#7f8c8d; margin-top:-10px;">Type one per line:</p>
+        <textarea id="word-input-area"></textarea>
+        <button class="btn btn-primary" style="margin-top:20px; width:100%;" onclick="saveCustomContent()">Save Deck Data 💾</button>
+        <button class="btn btn-dark" style="margin-top:12px; width:100%;" onclick="toggleEditor(false)">Close Menu</button>
+    </div>
+
+    <div id="game-wrapper">
+        
+        <div id="start-menu-overlay">
+            <div class="main-menu-logo-credits">by Teacher Wynn</div>
+
+            <div class="menu-actions-box">
+                <button class="btn btn-primary btn-giant" onclick="launchGame('spelling')">Spelling Mode 🔤</button>
+                <button class="btn btn-secondary btn-giant" style="background-color: #3498db; color: white;" onclick="launchGame('sentence')">Sentence Arrange 📝</button>
+                <div class="menu-divider"></div>
+                <button class="btn btn-dark btn-giant" style="font-size: 1.3rem; padding: 10px;" onclick="openEditorWithMode('spelling')">⚙️ Edit Spelling Words</button>
+                <button class="btn btn-dark btn-giant" style="font-size: 1.3rem; padding: 10px;" onclick="openEditorWithMode('sentence')">⚙️ Edit Sentences</button>
+                <button class="btn btn-dark btn-giant" style="font-size: 1.2rem; padding: 8px; background: #7f8c8d;" onclick="toggleFullscreen()">🖥️ Toggle Fullscreen</button>
+            </div>
+        </div>
+
+        <div class="top-bar">
+            <button class="btn btn-dark" onclick="exitToMainMenu()">🏠 Main Menu</button>
+            <div id="status-message">Ready... 🏁</div>
+            <button class="btn btn-secondary" style="padding: 14px 20px;" onclick="toggleFullscreen()" title="Toggle Fullscreen">🖥️</button>
+            <button class="btn btn-primary" onclick="nextQuestion()">Next Item ➡️</button>
+        </div>
+
+        <div class="slots-outer-container">
+            <div class="slots-container" id="slots-box"></div>
+        </div>
+
+        <div class="track-zone" id="track-zone">
+            <div id="runner-positioner">
+                <div id="runner-character"></div>
+            </div>
+            <div class="gameplay-credit-footer">This game is made by Teacher Wynn. She is a Filipina teacher based in Taichung City, Taiwan.</div>
+        </div>
+
+        <div class="overlay" id="win-overlay">
+            <div class="popup-card">
+                <h2>Fantastic! 🎉</h2>
+                <button class="btn btn-primary" style="font-size:2.2rem; padding: 18px 50px;" onclick="nextQuestion()">Next One</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CHARACTER_IMAGE_URL = 'character_image.gif'; 
+        const BACKGROUND_IMAGE_URL = 'menu_bg.jpg';
+
+        // Word and sentence pools preserved
+        const defaultWords = ["doctor", "nurse", "driver", "cook", "student", "teacher", "tall", "short", "mother", "grandmother", "father", "sister", "brother", "grandfather"];
+        const defaultSentences = ["Who's she?", "She is my mother.", "She's my sister.", "She's tall.", "She's short.", "Who's he?", "He's my grandfather.", "Are you a nurse?", "Is she a doctor?", "Is he a cook?", "No, he is not.", "Yes, he is.", "He is a driver."];
+
+        let spellingDeck = JSON.parse(localStorage.getItem('trackstar_spelling_deck')) || defaultWords;
+        let sentenceDeck = JSON.parse(localStorage.getItem('trackstar_sentence_deck')) || defaultSentences;
+
+        let currentGameMode = "spelling"; 
+        let currentItemIndex = 0;
+        let activeUnitsArray = []; 
+        let currentProgressIndex = 0;
+        let interactiveNodes = [];
+        let isScatteringState = false;
+        let editingTargetMode = "spelling";
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'tick') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(300, now);
+                gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'scatter') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.2);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'correct') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, now); osc.frequency.setValueAtTime(659.25, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.25);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                osc.start(now); osc.stop(now + 0.25);
+            } else if (type === 'win') {
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                    o.connect(g); g.connect(audioCtx.destination); o.type = 'sine';
+                    o.frequency.setValueAtTime(freq, now + (idx * 0.08));
+                    g.gain.setValueAtTime(0.15, now + (idx * 0.08)); g.gain.exponentialRampToValueAtTime(0.001, now + 0.4 + (idx * 0.08));
+                    o.start(now + (idx * 0.08)); o.stop(now + 0.5 + (idx * 0.08));
+                });
+            }
+        }
+
+        const gameWrapper = document.getElementById('game-wrapper');
+        const startMenuOverlay = document.getElementById('start-menu-overlay');
+        const trackZone = document.getElementById('track-zone');
+        const runnerPositioner = document.getElementById('runner-positioner');
+        const runnerCharacter = document.getElementById('runner-character');
+        const slotsBox = document.getElementById('slots-box');
+        const statusMessage = document.getElementById('status-message');
+        const winOverlay = document.getElementById('win-overlay');
+        const wordInputArea = document.getElementById('word-input-area');
+        const editorDrawer = document.getElementById('editor-drawer');
+        const drawerTitle = document.getElementById('drawer-title');
+        const drawerInstructions = document.getElementById('drawer-instructions');
+
+        runnerCharacter.style.backgroundImage = `url('${CHARACTER_IMAGE_URL}')`;
+        if(BACKGROUND_IMAGE_URL && BACKGROUND_IMAGE_URL !== '') {
+            startMenuOverlay.style.backgroundImage = `url('${BACKGROUND_IMAGE_URL}')`;
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+                const docEl = document.documentElement;
+                const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msFullscreenElement;
+                if (requestFullScreen) requestFullScreen.call(docEl).catch(() => {});
+            } else {
+                const exitFullScreen = document.exitFullscreen || document.mozCancelFullScreen || document.webkitExitFullscreen || document.msExitFullscreen;
+                if (exitFullScreen) exitFullScreen.call(document);
+            }
+        }
+
+        function launchGame(mode) {
+            currentGameMode = mode;
+            currentItemIndex = 0;
+            startMenuOverlay.style.opacity = '0';
+            setTimeout(() => { startMenuOverlay.style.display = 'none'; }, 400);
+            processActiveGameplayRound();
+        }
+
+        function changeStatus(text) {
+            statusMessage.style.opacity = '0';
+            statusMessage.style.transform = 'translateY(-5px)';
+            setTimeout(() => {
+                statusMessage.innerText = text;
+                statusMessage.style.opacity = '1';
+                statusMessage.style.transform = 'translateY(0)';
+            }, 150);
+        }
+
+        function processActiveGameplayRound() {
+            winOverlay.classList.remove('active');
+            slotsBox.style.opacity = "0";
+            slotsBox.style.transform = "translateY(-20px)";
+            
+            setTimeout(() => {
+                slotsBox.innerHTML = "";
+                interactiveNodes.forEach(el => el.remove());
+                interactiveNodes = [];
+                currentProgressIndex = 0;
+                isScatteringState = true;
+
+                let targetDeck = (currentGameMode === "spelling") ? spellingDeck : sentenceDeck;
+                let rawItem = targetDeck[currentItemIndex];
+
+                if(!rawItem || rawItem.trim() === "") {
+                    nextQuestion();
+                    return;
+                }
+
+                if (currentGameMode === "spelling") {
+                    activeUnitsArray = rawItem.trim().split(""); 
+                    changeStatus("Look at the word! 👀");
+                } else {
+                    activeUnitsArray = rawItem.trim().split(/\s+/); 
+                    changeStatus("Look at the sentence! 👀");
+                }
+
+                const trackWidth = trackZone.clientWidth;
+                const trackHeight = trackZone.clientHeight;
+
+                const unitSpacing = (currentGameMode === "spelling") ? 160 : 360; 
+                const totalWidth = activeUnitsArray.length * unitSpacing;
+                const startX = Math.max(40, (trackWidth - totalWidth) / 2);
+                const centerY = (trackHeight / 2) - ((currentGameMode === "spelling") ? 70 : 85);
+
+                runnerPositioner.style.transition = "none";
+                runnerPositioner.style.transform = `translate3d(-450px, ${centerY - 100}px, 0)`;
+                runnerCharacter.classList.remove('running');
+
+                for (let i = 0; i < activeUnitsArray.length; i++) {
+                    const nodeEl = document.createElement('div');
+                    nodeEl.classList.add('letter-node');
+                    if(currentGameMode === "sentence") {
+                        nodeEl.classList.add('sentence-node');
+                    }
+                    nodeEl.innerText = activeUnitsArray[i];
+                    nodeEl.dataset.index = i;
+                    
+                    nodeEl.style.left = `${startX + (i * unitSpacing)}px`;
+                    nodeEl.style.top = `${centerY}px`;
+                    nodeEl.style.transform = `translate3d(0, 0, 0)`;
+                    
+                    nodeEl.style.opacity = '0';
+                    trackZone.appendChild(nodeEl);
+                    interactiveNodes.push(nodeEl);
+                    
+                    setTimeout(() => { nodeEl.style.opacity = '1'; }, i * 60);
+                }
+
+                let countdown = 3;
+                const interval = setInterval(() => {
+                    countdown--;
+                    if (countdown > 0) {
+                        changeStatus(`Ready... Set... ${countdown}`);
+                        playSound('tick');
+                    } else {
+                        clearInterval(interval);
+                        runAndScatterContinuous();
+                    }
+                }, 1000);
+            }, 300);
+        }
+
+        function runAndScatterContinuous() {
+            changeStatus("GO! GO! GO! 🏁");
+            runnerCharacter.classList.add('running');
+
+            const trackWidth = trackZone.clientWidth;
+            const trackHeight = trackZone.clientHeight;
+            const centerY = (trackHeight / 2) - ((currentGameMode === "spelling") ? 70 : 85);
+
+            const sprintDuration = 1000; 
+            const totalTravelDistance = trackWidth + 900; 
+            
+            runnerPositioner.style.transition = `transform ${sprintDuration}ms linear`;
+            runnerPositioner.style.transform = `translate3d(${trackWidth + 450}px, ${centerY - 100}px, 0)`;
+
+            const positions = [];
+            
+            const nodeWidthBuffer = (currentGameMode === "spelling") ? 150 : 380;
+            const nodeHeightBuffer = (currentGameMode === "spelling") ? 150 : 190;
+            const minDistance = (currentGameMode === "spelling") ? 160 : 340;
+
+            for (let i = 0; i < interactiveNodes.length; i++) {
+                let scatterX, scatterY, fitsSafely;
+                let attempts = 0;
+
+                do {
+                    fitsSafely = true;
+                    scatterX = Math.floor(Math.random() * (trackWidth - nodeWidthBuffer)) + 20;
+                    scatterY = Math.floor(Math.random() * (trackHeight - nodeHeightBuffer - 60)) + 15; 
+                    attempts++;
+
+                    for (let j = 0; j < i; j++) {
+                        const prevPos = positions[j];
+                        const dist = Math.hypot(scatterX - prevPos.x, scatterY - prevPos.y);
+                        if (dist < minDistance) {
+                            fitsSafely = false;
+                            break;
+                        }
+                    }
+                } while (!fitsSafely && attempts < 200); 
+
+                positions.push({ x: scatterX, y: scatterY });
+            }
+
+            interactiveNodes.forEach((targetNode, i) => {
+                const baseLeft = parseInt(targetNode.style.left);
+                const hitTargetX = baseLeft - 100;
+                const positionRatio = (hitTargetX + 450) / totalTravelDistance;
+                const impactDelay = Math.max(0, sprintDuration * positionRatio);
+
+                setTimeout(() => {
+                    playSound('scatter');
+                    targetNode.classList.add('smooth-move');
+
+                    const scatterX = positions[i].x;
+                    const scatterY = positions[i].y;
+                    const tx = scatterX - baseLeft;
+                    const ty = scatterY - centerY;
+                    
+                    targetNode.dataset.tx = tx;
+                    targetNode.dataset.ty = ty;
+                    
+                    targetNode.style.transform = `translate3d(${tx}px, ${ty}px, 0)`;
+                }, impactDelay);
+            });
+
+            setTimeout(() => {
+                runnerCharacter.classList.remove('running');
+                interactiveNodes.forEach(el => el.classList.remove('smooth-move'));
+                setupInteractionSpellingPhase();
+            }, sprintDuration + 100);
+        }
+
+        function setupInteractionSpellingPhase() {
+            changeStatus(currentGameMode === "spelling" ? "Spell it back! 👇" : "Arrange the sentence! 👇");
+            isScatteringState = false;
+
+            slotsBox.innerHTML = "";
+
+            for (let i = 0; i < activeUnitsArray.length; i++) {
+                const slot = document.createElement('div');
+                slot.classList.add('slot');
+                if(currentGameMode === "sentence") {
+                    slot.classList.add('sentence-mode-slot');
+                }
+                slot.id = `slot-${i}`;
+                slotsBox.appendChild(slot);
+            }
+            
+            if(document.getElementById('slot-0')) {
+                document.getElementById('slot-0').classList.add('active-target');
+            }
+            
+            slotsBox.style.opacity = "1";
+            slotsBox.style.transform = "translateY(0)";
+
+            interactiveNodes.forEach(el => {
+                el.onclick = () => handleInteractiveNodeClick(el);
+            });
+        }
+
+        function handleInteractiveNodeClick(element) {
+            if (isScatteringState) return;
+
+            let clickedValue = element.innerText.trim();
+            let targetValue = activeUnitsArray[currentProgressIndex].trim();
+
+            if (clickedValue === targetValue) {
+                element.style.display = 'none';
+                playSound('correct');
+
+                const targetSlot = document.getElementById(`slot-${currentProgressIndex}`);
+                if (targetSlot) {
+                    targetSlot.classList.remove('active-target');
+                    targetSlot.innerText = activeUnitsArray[currentProgressIndex];
+                }
+                
+                currentProgressIndex++;
+
+                if (currentProgressIndex === activeUnitsArray.length) {
+                    setTimeout(() => {
+                        changeStatus("Finish Line! 🏆");
+                        playSound('win');
+                        winOverlay.classList.add('active');
+                    }, 250);
+                } else {
+                    const nextSlot = document.getElementById(`slot-${currentProgressIndex}`);
+                    if (nextSlot) nextSlot.classList.add('active-target');
+                }
+            } else {
+                playSound('wrong');
+                element.style.backgroundColor = '#ff4757';
+                const originalTx = element.dataset.tx || 0;
+                const originalTy = element.dataset.ty || 0;
+                
+                element.style.transform = `translate3d(${parseInt(originalTx) + 15}px, ${originalTy}px, 0) scale(1.02)`;
+                setTimeout(() => {
+                    element.style.transform = `translate3d(${parseInt(originalTx) - 15}px, ${originalTy}px, 0) scale(1.02)`;
+                    setTimeout(() => {
+                        element.style.transform = `translate3d(0, 0, 0) translate3d(${originalTx}px, ${originalTy}px, 0)`;
+                        element.style.backgroundColor = 'var(--bee-yellow)';
+                    }, 100);
+                }, 100);
+            }
+        }
+
+        function nextQuestion() {
+            let targetDeck = (currentGameMode === "spelling") ? spellingDeck : sentenceDeck;
+            currentItemIndex = (currentItemIndex + 1) % targetDeck.length;
+            processActiveGameplayRound();
+        }
+
+        function openEditorWithMode(mode) {
+            editingTargetMode = mode;
+            if(mode === 'spelling') {
+                drawerTitle.innerText = "Edit Word Deck";
+                drawerInstructions.innerText = "Type one target word per line:";
+                wordInputArea.value = spellingDeck.join('\n');
+            } else {
+                drawerTitle.innerText = "Edit Sentence Deck";
+                drawerInstructions.innerText = "Type one full sentence per line:";
+                wordInputArea.value = sentenceDeck.join('\n');
+            }
+            toggleEditor(true);
+        }
+
+        function toggleEditor(open) {
+            if (open) {
+                editorDrawer.classList.add('open');
+            } else {
+                editorDrawer.classList.remove('open');
+            }
+        }
+
+        // Caching save updates
+        function saveCustomContent() {
+            const lines = wordInputArea.value.split('\n');
+            const filtered = lines.map(w => w.trim()).filter(w => w.length > 0);
+            
+            if (filtered.length > 0) {
+                if (editingTargetMode === "spelling") {
+                    spellingDeck = filtered;
+                    localStorage.setItem('trackstar_spelling_deck', JSON.stringify(spellingDeck));
+                } else {
+                    sentenceDeck = filtered;
+                    localStorage.setItem('trackstar_sentence_deck', JSON.stringify(sentenceDeck));
+                }
+                
+                currentItemIndex = 0;
+                toggleEditor(false);
+                
+                if (startMenuOverlay.style.display === 'none' && currentGameMode === editingTargetMode) {
+                    processActiveGameplayRound();
+                }
+            } else {
+                alert("Please type at least one line of item content data!");
+            }
+        }
+
+        function exitToMainMenu() {
+            winOverlay.classList.remove('active');
+            startMenuOverlay.style.display = 'flex';
+            setTimeout(() => { startMenuOverlay.style.opacity = '1'; }, 50);
+            slotsBox.innerHTML = "";
+            slotsBox.style.opacity = "0";
+            interactiveNodes.forEach(el => el.remove());
+            interactiveNodes = [];
+        }
+    </script>
+</body>
+</html>
